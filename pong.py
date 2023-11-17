@@ -90,7 +90,7 @@ async def read_imu(user_input, device, data_queue):
             data = await client.read_gatt_char("00002101-0000-1000-8000-00805f9b34fb")
             #print(f"data: {data}")
             # Update user_input based on the received BLE value
-            user_input = int.from_bytes(data, byteorder="little", signed="true")
+            user_input = int.from_bytes(data, byteorder="little", signed=True)
             print(f"user input = {user_input}")
             data_queue.put(user_input)
             #asyncio.sleep(0.5)
