@@ -31,8 +31,10 @@ async def read_imu(user_input, device):
 
 async def run():
     user_input = 0
-    device = await connect_arduino()
-    await read_imu(user_input, device)
+    p1_controller = await connect_arduino()
+    p2_controller = await connect_arduino(name="Player 2 Nano")
+    await read_imu(user_input, p1_controller)
+    await read_imu(user_input, p2_controller)
 
 if __name__ == "__main__":
     asyncio.run(run())

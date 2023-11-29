@@ -6,6 +6,7 @@ Foundation of Pong Code adopted from CYBERXPLOIT on Github, with further modific
 #Importing the module pygame
 import queue
 import pygame
+import struct
 import asyncio
 import threading
 from ble_sensor_reader import connect_arduino
@@ -90,7 +91,7 @@ async def read_imu(user_input, device, data_queue):
             data = await client.read_gatt_char("00002101-0000-1000-8000-00805f9b34fb")
             #print(f"data: {data}")
             # Update user_input based on the received BLE value
-            user_input = int.from_bytes(data, byteorder="little", signed=True)
+            user_input = struct.unpack("f", data)
             print(f"user input = {user_input}")
             data_queue.put(user_input)
             #asyncio.sleep(0.5)
@@ -101,11 +102,14 @@ def start_ble_task(user_input, device, data_queue):
 # Main loop
 if __name__ == "__main__":
     run = True
-    user_input = 0
+    p1_input = 0
+    p2_input = 0
     clock = pygame.time.Clock()
-    device = asyncio.run(connect_arduino())
+    p1_controller = asyncio.run(connect_arduino())
+    p2_controller = asyncio.run(connect_arduino(name="Player 2 Nano"))
     data_queue = queue.Queue()
-    ble_thread = threading.Thread(target=start_ble_task, args=(user_input, device, data_queue))
+    ble_thread = threading.Thread(target=start_ble_task, args=(p1_input, p1_controller, data_queue))
+    ble_thread2 = threading.Thread(target=start_ble_task, args=(p2_input, p2_controller, data_queue))
     ble_thread.start()
 
     while run:
@@ -115,11 +119,18 @@ if __name__ == "__main__":
                 run = False
                 read_arduino = False
 
-        if user_input > 0:
-            if (paddle1.rect.y > 0):
+        if p1_input > 0.3:
+            if (paddle1.rect.y > -0.3):
                 paddle1.rect.y += -paddle_speed
-        elif user_input < 0:
+        elif p1_input < 0:
             if (paddle1.rect.y < 425):
+                paddle1.rect.y += paddle_speed
+        
+        if p2_input > 0.3:
+            if (paddle2.rect.y > 0):
+                paddle1.rect.y += -paddle_speed
+        elif p2_input < -0.3:
+            if (paddle2.rect.y < 425):
                 paddle1.rect.y += paddle_speed
 
         # Ball movement
