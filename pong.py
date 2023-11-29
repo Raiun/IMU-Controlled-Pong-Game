@@ -119,52 +119,67 @@ if __name__ == "__main__":
                 run = False
                 read_arduino = False
 
-        if p1_input > 0.3:
-            if (paddle1.rect.y > -0.3):
-                paddle1.rect.y += -paddle_speed
-        elif p1_input < 0:
-            if (paddle1.rect.y < 425):
-                paddle1.rect.y += paddle_speed
-        
-        if p2_input > 0.3:
-            if (paddle2.rect.y > 0):
-                paddle1.rect.y += -paddle_speed
-        elif p2_input < -0.3:
-            if (paddle2.rect.y < 425):
-                paddle1.rect.y += paddle_speed
+        if paddle1.points == 10 or paddle2.points == 10:
+            font = pygame.font.SysFont("SYNCOPATE", 60)
+            if paddle1.points > paddle2.points:
+                text = font.render("Player 1 WIN", False, white)
+                textRect = text.get_rect()
+                textRect.center = (750 // 2, 200)
+                win.blit(text, textRect)
+            else:
+                text = font.render("Player 2 WIN", False, white)
+                textRect = text.get_rect()
+                textRect.center = (750 // 2, 200)
+                win.blit(text, textRect)
+            all_sprites.draw(win)
+            pygame.display.update()
+        else:    
+            if p1_input > 0.3:
+                if (paddle1.rect.y > -0.3):
+                    paddle1.rect.y += -paddle_speed
+            elif p1_input < 0:
+                if (paddle1.rect.y < 425):
+                    paddle1.rect.y += paddle_speed
+            
+            if p2_input > 0.3:
+                if (paddle2.rect.y > 0):
+                    paddle1.rect.y += -paddle_speed
+            elif p2_input < -0.3:
+                if (paddle2.rect.y < 425):
+                    paddle1.rect.y += paddle_speed
 
-        # Ball movement
-        ball.rect.x += ball.speed * ball.dx
-        ball.rect.y += ball.speed * ball.dy
+            # Ball movement
+            ball.rect.x += ball.speed * ball.dx
+            ball.rect.y += ball.speed * ball.dy
 
-        # Ball collisions with the walls i.e The ball bounces back instead of moving continously
-        if ball.rect.y > 490:
-            ball.dy = -1
+            # Ball collisions with the walls i.e The ball bounces back instead of moving continously
+            if ball.rect.y > 490:
+                ball.dy = -1
 
-        if ball.rect.x > 740:
-            ball.rect.x, ball.rect.y = 375, 250
-            ball.dx = -1
-            paddle1.points +=1
+            if ball.rect.x > 740:
+                ball.rect.x, ball.rect.y = 375, 250
+                ball.dx = -1
+                paddle1.points +=1
 
-        if ball.rect.y < 10:
-            ball.dy = 1
+            if ball.rect.y < 10:
+                ball.dy = 1
 
-        if ball.rect.x < 10:
-            ball.rect.x, ball.rect.y = 375, 250
-            ball.dx = 1
-            paddle2.points += 1
-        
-        if paddle1.rect.colliderect(ball.rect):
-            ball.dx = 1
+            if ball.rect.x < 10:
+                ball.rect.x, ball.rect.y = 375, 250
+                ball.dx = 1
+                paddle2.points += 1
+            
+            if paddle1.rect.colliderect(ball.rect):
+                ball.dx = 1
 
-        if paddle2.rect.colliderect(ball.rect):
-            ball.dx = -1
+            if paddle2.rect.colliderect(ball.rect):
+                ball.dx = -1
 
-        while not data_queue.empty():
-            user_input = data_queue.get()
-        
-        # Calling the redraw function
-        redraw()
+            while not data_queue.empty():
+                user_input = data_queue.get()
+            
+            # Calling the redraw function
+            redraw()
 
     ble_thread.join()
     pygame.quit()
