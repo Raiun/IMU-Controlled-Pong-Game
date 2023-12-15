@@ -88,13 +88,13 @@ def redraw():
 async def read_imu(user_input, device, data_queue):
     async with BleakClient(device) as client:
         while read_arduino == True:
-            data = await client.read_gatt_char("00002101-0000-1000-8000-00805f9b34fb")
+            data = await client.read_gatt_char("00002103-0000-1000-8000-00805f9b34fb")
             #print(f"data: {data}")
             # Update user_input based on the received BLE value
-            user_input = struct.unpack("f", data)
-            print(f"user input = {user_input}")
+            user_input = struct.unpack("f", data)[0]
+            #print(f"user input = {user_input}")
             data_queue.put(user_input)
-            #asyncio.sleep(0.5)
+        await client.disconnect()
 
 def start_ble_task(user_input, device, data_queue):
     asyncio.run(read_imu(user_input, device, data_queue))
@@ -105,15 +105,19 @@ if __name__ == "__main__":
     p1_input = 0
     p2_input = 0
     clock = pygame.time.Clock()
-    p1_controller = asyncio.run(connect_arduino())
+    p1_controller = asyncio.run(connect_arduino(name="Nano 33 IoT"))
+    pygame.time.delay(2000)
     p2_controller = asyncio.run(connect_arduino(name="Player 2 Nano"))
-    data_queue = queue.Queue()
-    ble_thread = threading.Thread(target=start_ble_task, args=(p1_input, p1_controller, data_queue))
-    ble_thread2 = threading.Thread(target=start_ble_task, args=(p2_input, p2_controller, data_queue))
+    p1_data_queue = queue.Queue()
+    p2_data_queue = queue.Queue()
+    ble_thread = threading.Thread(target=start_ble_task, args=(p1_input, p1_controller, p1_data_queue))
+    ble_thread2 = threading.Thread(target=start_ble_task, args=(p2_input, p2_controller, p2_data_queue))
     ble_thread.start()
+    ble_thread2.start()
 
+    pygame.time.delay(3000)
     while run:
-        clock.tick(30)
+        clock.tick(60)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -133,20 +137,21 @@ if __name__ == "__main__":
                 win.blit(text, textRect)
             all_sprites.draw(win)
             pygame.display.update()
+            read_arduino = False
         else:    
-            if p1_input > 0.3:
-                if (paddle1.rect.y > -0.3):
-                    paddle1.rect.y += -paddle_speed
-            elif p1_input < 0:
+            if p1_input > 0.8:
+                if (paddle1.rect.y > 0):
+                    paddle1.rect.y += -paddle_speed  * (p1_input + 1)
+            elif p1_input < -0.8:
                 if (paddle1.rect.y < 425):
-                    paddle1.rect.y += paddle_speed
-            
-            if p2_input > 0.3:
+                    paddle1.rect.y += paddle_speed  * (-p1_input + 1)
+            print(p2_input)
+            if p2_input > 0.8:
                 if (paddle2.rect.y > 0):
-                    paddle1.rect.y += -paddle_speed
-            elif p2_input < -0.3:
+                    paddle2.rect.y += -paddle_speed * (p2_input + 1)
+            elif p2_input < -0.8:
                 if (paddle2.rect.y < 425):
-                    paddle1.rect.y += paddle_speed
+                    paddle2.rect.y += paddle_speed  * (-p2_input + 1)
 
             # Ball movement
             ball.rect.x += ball.speed * ball.dx
@@ -175,11 +180,20 @@ if __name__ == "__main__":
             if paddle2.rect.colliderect(ball.rect):
                 ball.dx = -1
 
-            while not data_queue.empty():
-                user_input = data_queue.get()
-            
+            while not p1_data_queue.empty():
+                try:
+                    p1_input = p1_data_queue.get()
+                except:
+                    print("p1")
+
+            while not p2_data_queue.empty():
+                try:
+                    p2_input = p2_data_queue.get()
+                except:
+                    print("p2")
             # Calling the redraw function
             redraw()
 
     ble_thread.join()
+    ble_thread2.join()
     pygame.quit()
